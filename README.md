@@ -1,4 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Resumio
+
+Resumio is an AI‑powered resume builder that helps you craft ATS‑friendly, beautifully designed resumes in seconds. It offers three creation modes: upload an existing resume, start from a template, or generate a draft with Gemini AI. The UI features auto‑resizing textareas, markdown rendering, and a modern glassmorphism design.
+
+## Features
+
+- **AI‑generated resumes** with personal details (name, email, phone, location)
+- **Three creation modes**: Upload, Template, AI
+- **Auto‑resizing textareas** (no scrollbars)
+- **Markdown support** (bold, etc.) in preview
+- **ATS scoring & suggestions**
+- **Export** to PDF, DOCX, TXT
+- **Responsive design** with vibrant colors and micro‑animations
+- **Ready for Netlify** deployment (see `netlify.toml`)
+
+## Getting Started
+
+1. Clone the repo:
+
+```bash
+git clone https://github.com/Sathvik-Nagesh/Resumio.git
+cd Resumio
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Create a `.env.local` file with your Gemini API key:
+
+```
+GEMINI_API_KEY=your_api_key_here
+```
+
+4. Run the development server:
+
+```bash
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) to view the app.
+
+## Deployment
+
+The project includes a `netlify.toml` file for easy deployment on Netlify.
+
+1. Push your code to GitHub (already done).
+2. In Netlify, create a new site from the GitHub repository.
+3. Add the environment variable `GEMINI_API_KEY` in Site Settings → Build & Deploy → Environment.
+4. Deploy – Netlify will run `npm run build` and serve the site.
+
+## Contributing
+
+Feel free to open issues or submit pull requests. Ensure code passes `npm run lint` and the app builds successfully.
+
+## License
+
+MIT
 
 ## Getting Started
 
