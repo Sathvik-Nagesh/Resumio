@@ -1,0 +1,41 @@
+export const ACTION_VERBS = [
+  "accelerated",
+  "achieved",
+  "architected",
+  "automated",
+  "built",
+  "captured",
+  "created",
+  "delivered",
+  "designed",
+  "developed",
+  "drove",
+  "enabled",
+  "engineered",
+  "enhanced",
+  "expanded",
+  "implemented",
+  "improved",
+  "launched",
+  "led",
+  "modernized",
+  "optimized",
+  "orchestrated",
+  "owned",
+  "pioneered",
+  "reduced",
+  "shipped",
+  "streamlined",
+  "spearheaded",
+  "scaled",
+  "transformed",
+];
+
+export const METRIC_REGEX = /(\d+%?)|(\$\d+)|(\b(?:million|billion|thousand|k)\b)/i;
+
+export const REQUIRED_SECTIONS = [
+  "summary",
+  "experience",
+  "education",
+  "skills",
+];
