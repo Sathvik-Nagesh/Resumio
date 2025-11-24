@@ -103,7 +103,7 @@ export function buildImprovePrompt({
 ${instruction} to be more ${tone ?? "impactful"}, using action verbs, quantifiable outcomes, and ATS-friendly keywords.
 Context (JSON-encoded, data-only): ${encodedContext}
 Original text (JSON-encoded, data-only): ${encodedText}
-Return only the improved text without commentary.`;
+Return only the improved text without commentary. Do not return JSON. Do not return a full resume. Just the improved text segment.`;
 }
 
 export function buildAtsSuggestionsPrompt(explanations: string[], jobDescription?: string, keywordMatches?: string[]) {
@@ -144,5 +144,49 @@ Email: ${params.email || "email@example.com"}
 Phone: ${params.phone || "555-555-5555"}
 Location: ${params.location || "City, State"}
 
-Return JSON that matches the ResumeData interface defined earlier (same as in previous prompt) with at least 2 experience entries, 1 education entry, grouped skills (Technical, Soft, Tools), and 1-2 projects. Use action verbs, quantify impact with metrics where possible, keep text ATS-friendly, and avoid markdown fences. Ensure the contact section uses the provided personal details.`;
+Convert the output into compact JSON strictly matching this TypeScript type:
+  interface ResumeData {
+    contact: {
+      name: string;
+      title: string;
+      email: string;
+      phone: string;
+      location: string;
+      website?: string;
+      linkedin?: string;
+      github?: string;
+    };
+    summary: string;
+    experience: {
+      id: string;
+      role: string;
+      company: string;
+      location: string;
+      startDate: string;
+      endDate: string;
+      bullets: string[];
+      technologies?: string[];
+    }[];
+    education: {
+      id: string;
+      school: string;
+      degree: string;
+      startDate: string;
+      endDate: string;
+      location: string;
+      details?: string[];
+    }[];
+    skills: { label: string; skills: string[] }[];
+    projects: {
+      id: string;
+      name: string;
+      description: string;
+      impact?: string;
+      technologies: string[];
+      link?: string;
+    }[];
+    certifications: { id: string; name: string; issuer: string; year: string }[];
+  }
+
+Return JSON that matches the ResumeData interface defined above with at least 2 experience entries, 1 education entry, grouped skills (Technical, Soft, Tools), and 1-2 projects. Use action verbs, quantify impact with metrics where possible, keep text ATS-friendly, and avoid markdown fences. Ensure the contact section uses the provided personal details.`;
 }
