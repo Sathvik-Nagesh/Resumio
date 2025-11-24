@@ -1,19 +1,61 @@
 import { NextResponse } from "next/server";
+import getConfig from "next/config";
 
 /**
- * Test endpoint to verify GEMINI_API_KEY is loaded
+ * Enhanced test endpoint to debug GEMINI_API_KEY loading
  * Visit: /api/test-env
  * 
  * DELETE THIS FILE after testing for security!
  */
 export async function GET() {
-  const apiKey = process.env.GEMINI_API_KEY;
-  
+  // Try multiple ways to access the API key
+  const apiKey1 = process.env.GEMINI_API_KEY;
+
+  // Try using next/config
+  let apiKey2 = null;
+  try {
+    const { serverRuntimeConfig } = getConfig();
+    apiKey2 = serverRuntimeConfig?.GEMINI_API_KEY;
+  } catch (e) {
+    // getConfig might not work in all environments
+  }
+
+  // Get all environment variable keys (safely, without values)
+  const allEnvKeys = Object.keys(process.env).filter(key =>
+    key.includes('GEMINI') ||
+    key.includes('API') ||
+    key.includes('NEXT') ||
+    key.includes('NODE') ||
+    key.includes('NETLIFY') ||
+    key.includes('VERCEL')
+  );
+
   return NextResponse.json({
-    hasApiKey: !!apiKey,
-    keyLength: apiKey?.length || 0,
-    keyPrefix: apiKey?.substring(0, 8) || "NOT_SET",
-    isPlaceholder: apiKey === "your_gemini_api_key_here",
-    // NEVER return the full key!
+    // Main check
+    hasApiKey: !!apiKey1,
+    keyLength: apiKey1?.length || 0,
+    keyPrefix: apiKey1?.substring(0, 8) || "NOT_SET",
+    isPlaceholder: apiKey1 === "your_gemini_api_key_here",
+
+    // Alternative sources
+    fromProcessEnv: !!apiKey1,
+    fromNextConfig: !!apiKey2,
+
+    // Environment info
+    nodeEnv: process.env.NODE_ENV,
+    platform: process.env.VERCEL ? 'Vercel' : process.env.NETLIFY ? 'Netlify' : 'Unknown',
+
+    // Available env keys (for debugging)
+    availableEnvKeys: allEnvKeys,
+
+    // Total env vars count
+    totalEnvVars: Object.keys(process.env).length,
+
+    // Debugging info
+    debug: {
+      hasProcessEnv: typeof process !== 'undefined' && typeof process.env !== 'undefined',
+      geminiKeyType: typeof apiKey1,
+      geminiKeyValue: apiKey1 ? `${apiKey1.substring(0, 8)}...${apiKey1.substring(apiKey1.length - 4)}` : 'NOT_SET',
+    }
   });
 }

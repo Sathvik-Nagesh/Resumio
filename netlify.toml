@@ -4,3 +4,11 @@
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+# Ensure environment variables are available
+[build.environment]
+  NODE_VERSION = "18"
+
+# Make sure functions have access to environment variables
+[functions]
+  node_bundler = "esbuild"
