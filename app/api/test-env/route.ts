@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import getConfig from "next/config";
 
 /**
  * Enhanced test endpoint to debug GEMINI_API_KEY loading
@@ -8,17 +7,8 @@ import getConfig from "next/config";
  * DELETE THIS FILE after testing for security!
  */
 export async function GET() {
-  // Try multiple ways to access the API key
-  const apiKey1 = process.env.GEMINI_API_KEY;
-
-  // Try using next/config
-  let apiKey2 = null;
-  try {
-    const { serverRuntimeConfig } = getConfig();
-    apiKey2 = serverRuntimeConfig?.GEMINI_API_KEY;
-  } catch (e) {
-    // getConfig might not work in all environments
-  }
+  // Access the API key from process.env
+  const apiKey = process.env.GEMINI_API_KEY;
 
   // Get all environment variable keys (safely, without values)
   const allEnvKeys = Object.keys(process.env).filter(key =>
@@ -32,14 +22,10 @@ export async function GET() {
 
   return NextResponse.json({
     // Main check
-    hasApiKey: !!apiKey1,
-    keyLength: apiKey1?.length || 0,
-    keyPrefix: apiKey1?.substring(0, 8) || "NOT_SET",
-    isPlaceholder: apiKey1 === "your_gemini_api_key_here",
-
-    // Alternative sources
-    fromProcessEnv: !!apiKey1,
-    fromNextConfig: !!apiKey2,
+    hasApiKey: !!apiKey,
+    keyLength: apiKey?.length || 0,
+    keyPrefix: apiKey?.substring(0, 8) || "NOT_SET",
+    isPlaceholder: apiKey === "your_gemini_api_key_here",
 
     // Environment info
     nodeEnv: process.env.NODE_ENV,
@@ -54,8 +40,8 @@ export async function GET() {
     // Debugging info
     debug: {
       hasProcessEnv: typeof process !== 'undefined' && typeof process.env !== 'undefined',
-      geminiKeyType: typeof apiKey1,
-      geminiKeyValue: apiKey1 ? `${apiKey1.substring(0, 8)}...${apiKey1.substring(apiKey1.length - 4)}` : 'NOT_SET',
+      geminiKeyType: typeof apiKey,
+      geminiKeyValue: apiKey ? `${apiKey.substring(0, 8)}...${apiKey.substring(apiKey.length - 4)}` : 'NOT_SET',
     }
   });
 }
