@@ -7,7 +7,7 @@
 
 # Ensure environment variables are available
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "20"
 
 # Make sure functions have access to environment variables
 [functions]
