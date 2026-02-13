@@ -65,10 +65,9 @@ export default function AdminMetricsPage() {
     setLoading(true);
     setError(null);
     try {
+      const authHeaders = await getAuthHeaders();
       const response = await fetch(`/api/admin/metrics?days=${days}`, {
-        headers: {
-          ...(await getAuthHeaders()),
-        },
+        headers: authHeaders,
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
