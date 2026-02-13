@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { CheckCircle2, Crown, ShieldCheck, Sparkles } from "lucide-react";
-import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -34,19 +33,25 @@ const PRO_FEATURES = [
 
 export default function PricingPage() {
   const { user, isPro, upgradeToPro, openBillingPortal, refreshSubscription } = useAuthResume();
-  const params = useSearchParams();
   const [currency, setCurrency] = useState<Currency>("USD");
   const [interval, setInterval] = useState<BillingInterval>("month");
   const [couponCode, setCouponCode] = useState("");
   const [pending, setPending] = useState(false);
-  const variant = params.get("variant") === "b" ? "b" : "a";
+  const [variant, setVariant] = useState<"a" | "b">("a");
+  const [checkoutState, setCheckoutState] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const query = new URLSearchParams(window.location.search);
+    setVariant(query.get("variant") === "b" ? "b" : "a");
+    setCheckoutState(query.get("checkout"));
+  }, []);
 
   useEffect(() => {
     setCurrency(detectPreferredCurrency(typeof navigator !== "undefined" ? navigator.language : "en-US"));
   }, []);
 
   useEffect(() => {
-    const checkoutState = params.get("checkout");
     if (checkoutState === "success") {
       void trackEvent({ event: "checkout_success", source: "pricing_page", variant });
       void refreshSubscription().then(() => {
@@ -56,7 +61,7 @@ export default function PricingPage() {
       void trackEvent({ event: "checkout_cancel", source: "pricing_page", variant });
       toast.info("Checkout canceled. You can continue using free plan.");
     }
-  }, [params, refreshSubscription, variant]);
+  }, [checkoutState, refreshSubscription, variant]);
 
   useEffect(() => {
     void trackEvent({

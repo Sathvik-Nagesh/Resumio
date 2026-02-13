@@ -96,19 +96,28 @@ export async function POST(request: NextRequest) {
       { merge: true }
     );
   }
+  if (!customerId) {
+    return NextResponse.json({ error: "Unable to resolve billing customer." }, { status: 500 });
+  }
+  const resolvedCustomerId: string = customerId;
 
   let discounts: Stripe.Checkout.SessionCreateParams.Discount[] | undefined;
   if (couponCode) {
-    const coupons = await stripe.coupons.list({ code: couponCode, limit: 1 });
-    if (!coupons.data.length || !coupons.data[0].valid) {
+    const promoCodes = await stripe.promotionCodes.list({
+      code: couponCode,
+      active: true,
+      limit: 1,
+    });
+    const promo = promoCodes.data[0];
+    if (!promo || !promo.active) {
       return NextResponse.json({ error: "Coupon code is invalid or expired." }, { status: 400 });
     }
-    discounts = [{ coupon: coupons.data[0].id }];
+    discounts = [{ promotion_code: promo.id }];
   }
 
   const session = await stripe.checkout.sessions.create({
     mode: "subscription",
-    customer: customerId,
+    customer: resolvedCustomerId,
     payment_method_types: ["card"],
     line_items: [{ price: priceId, quantity: 1 }],
     allow_promotion_codes: !couponCode,
@@ -119,7 +128,7 @@ export async function POST(request: NextRequest) {
       firebaseUid: decoded.uid,
       currency,
       interval,
-      couponCode: couponCode || undefined,
+      couponCode: couponCode || null,
     },
     subscription_data: {
       metadata: {
