@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode, useState } from "react";
-import { LayoutTemplate, Plus, Sparkles, Loader2 } from "lucide-react";
+import { LayoutTemplate, Plus, Sparkles, Loader2, Crown } from "lucide-react";
 import { toast } from "sonner";
 
 import { resumeTemplates } from "@/data/templates";
@@ -12,6 +12,9 @@ import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { TemplateVariant } from "@/lib/types";
+import { useAuthResume } from "@/components/providers/AuthResumeProvider";
+import { isPremiumTemplate } from "@/lib/premium";
+import { getAuthHeaders } from "@/lib/client-auth";
 
 const steps = [
   { id: "basic", title: "Basics", description: "Contact + title" },
@@ -22,6 +25,7 @@ const steps = [
 ];
 
 export function TemplateModePanel() {
+  const { isPro } = useAuthResume();
   const {
     resume,
     template,
@@ -56,7 +60,10 @@ export function TemplateModePanel() {
       setLoading("ai", true);
       const response = await fetch("/api/ai/improve", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(await getAuthHeaders()),
+        },
         body: JSON.stringify({
           mode: "summary",
           tone,
@@ -124,8 +131,16 @@ export function TemplateModePanel() {
                 templateId={tpl.id}
                 name={tpl.name}
                 tagline={tpl.tagline}
+                isPremium={isPremiumTemplate(tpl.id)}
+                isPro={isPro}
                 selected={template === tpl.id}
-                onSelect={() => setTemplate(tpl.id)}
+                onSelect={() => {
+                  if (isPremiumTemplate(tpl.id) && !isPro) {
+                    toast.info("This template is part of Resumio Pro.");
+                    return;
+                  }
+                  setTemplate(tpl.id);
+                }}
               />
             ))}
           </div>
@@ -203,6 +218,9 @@ export function TemplateModePanel() {
               value={resume.summary}
               onChange={(event) => updateSummary(event.target.value)}
             />
+            <p className="text-xs text-slate-500">
+              Better results: include role scope, years of experience, and one quantified win before clicking AI improve.
+            </p>
             <div className="flex flex-wrap gap-3">
               {(["clarity", "concise", "impactful"] as const).map((tone) => (
                 <Button
@@ -427,7 +445,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function TemplateCard({ templateId, name, tagline, selected, onSelect }: TemplateCardProps) {
+function TemplateCard({ templateId, name, tagline, isPremium, isPro, selected, onSelect }: TemplateCardProps) {
   // Template-specific color schemes
   const templateColors: Record<TemplateVariant, { bg: string; accent: string }> = {
     aurora: { bg: "bg-gradient-to-br from-slate-900 to-slate-700", accent: "border-slate-300" },
@@ -456,7 +474,15 @@ function TemplateCard({ templateId, name, tagline, selected, onSelect }: Templat
     >
       <div className="flex items-center justify-between">
         <span className="text-base font-bold text-slate-900">{name}</span>
-        {selected && <span className="text-xs font-bold text-slate-900">✓</span>}
+        <div className="flex items-center gap-2">
+          {isPremium && !isPro ? (
+            <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-700">
+              <Crown className="mr-1 h-3 w-3" />
+              Pro
+            </span>
+          ) : null}
+          {selected && <span className="text-xs font-bold text-slate-900">✓</span>}
+        </div>
       </div>
       <p className="mt-1 text-xs text-slate-600">{tagline}</p>
 
@@ -482,6 +508,8 @@ interface TemplateCardProps {
   templateId: TemplateVariant;
   name: string;
   tagline: string;
+  isPremium: boolean;
+  isPro: boolean;
   selected: boolean;
   onSelect: () => void;
 }

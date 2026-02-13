@@ -34,33 +34,114 @@ const safeDatePart = (date?: string, index = 0) => {
   const parts = typeof date === "string" ? date.split(" ") : [];
   return parts[index] ?? date ?? "";
 };
+
+const fallbackIfEmpty = (value: string | undefined, fallback: string) =>
+  value && value.trim().length > 0 ? value : fallback;
+
+const buildPreviewData = (data: ResumeData): ResumeData => {
+  const hasExperience = data.experience.some((item) => item.role || item.company || item.bullets.some(Boolean));
+  const hasEducation = data.education.some((item) => item.school || item.degree);
+  const hasSkills = data.skills.some((group) => group.skills.length > 0);
+
+  return {
+    ...data,
+    contact: {
+      ...data.contact,
+      name: fallbackIfEmpty(data.contact.name, "Your Name"),
+      title: fallbackIfEmpty(data.contact.title, "Target Role"),
+      email: fallbackIfEmpty(data.contact.email, "you@email.com"),
+      phone: fallbackIfEmpty(data.contact.phone, "+1 (555) 000-0000"),
+      location: fallbackIfEmpty(data.contact.location, "City, Country"),
+    },
+    summary: fallbackIfEmpty(
+      data.summary,
+      "Write a concise, impact-focused summary tailored to your target role and measurable outcomes."
+    ),
+    experience: hasExperience
+      ? data.experience.map((exp) => ({
+          ...exp,
+          role: fallbackIfEmpty(exp.role, "Role"),
+          company: fallbackIfEmpty(exp.company, "Company"),
+          location: fallbackIfEmpty(exp.location, "Location"),
+          startDate: fallbackIfEmpty(exp.startDate, "Start"),
+          endDate: fallbackIfEmpty(exp.endDate, "End"),
+          bullets: exp.bullets.length
+            ? exp.bullets.map((bullet) => fallbackIfEmpty(bullet, "Add achievement with measurable impact"))
+            : ["Add achievement with measurable impact"],
+        }))
+      : [
+          {
+            id: "preview-exp",
+            role: "Senior Product Engineer",
+            company: "Example Company",
+            location: "Remote",
+            startDate: "2022",
+            endDate: "Present",
+            bullets: [
+              "Increased conversion by 18% through onboarding redesign and analytics instrumentation.",
+              "Reduced API latency by 34% by optimizing query paths and caching.",
+            ],
+            technologies: ["Next.js", "TypeScript", "PostgreSQL"],
+          },
+        ],
+    education: hasEducation
+      ? data.education.map((edu) => ({
+          ...edu,
+          degree: fallbackIfEmpty(edu.degree, "Degree"),
+          school: fallbackIfEmpty(edu.school, "Institution"),
+          location: fallbackIfEmpty(edu.location, "Location"),
+          startDate: fallbackIfEmpty(edu.startDate, "Start"),
+          endDate: fallbackIfEmpty(edu.endDate, "End"),
+        }))
+      : [
+          {
+            id: "preview-edu",
+            degree: "B.Tech in Computer Science",
+            school: "Example University",
+            startDate: "2018",
+            endDate: "2022",
+            location: "Bengaluru, India",
+            details: [],
+          },
+        ],
+    skills: hasSkills
+      ? data.skills
+      : [
+          { label: "Technical", skills: ["TypeScript", "React", "Node.js"] },
+          { label: "Soft Skills", skills: ["Leadership", "Communication"] },
+          { label: "Tools", skills: ["GitHub", "Figma", "Postman"] },
+        ],
+  };
+};
 export function ResumePreview({ data, template }: ResumePreviewProps) {
+  const previewData = buildPreviewData(data);
+
   const renderTemplate = () => {
     switch (template) {
       case "aurora":
-        return <AuroraTemplate data={data} />;
+        return <AuroraTemplate data={previewData} />;
       case "noir":
-        return <NoirTemplate data={data} />;
+        return <NoirTemplate data={previewData} />;
       case "serif":
-        return <SerifTemplate data={data} />;
+        return <SerifTemplate data={previewData} />;
       case "grid":
-        return <GridTemplate data={data} />;
+        return <GridTemplate data={previewData} />;
       case "capsule":
-        return <CapsuleTemplate data={data} />;
+        return <CapsuleTemplate data={previewData} />;
       case "linear":
-        return <LinearTemplate data={data} />;
+        return <LinearTemplate data={previewData} />;
       case "focus":
-        return <FocusTemplate data={data} />;
+        return <FocusTemplate data={previewData} />;
       case "metro":
-        return <MetroTemplate data={data} />;
+        return <MetroTemplate data={previewData} />;
       case "elevate":
-        return <ElevateTemplate data={data} />;
+        return <ElevateTemplate data={previewData} />;
       case "minimal":
-        return <MinimalTemplate data={data} />;
+        return <MinimalTemplate data={previewData} />;
       case "legacy":
-        return <LegacyTemplate data={data} />;
+        return <LegacyTemplate data={previewData} />;
       default:
-        return <AuroraTemplate data={data} />;
+        return <AuroraTemplate data={previewData} />;
     }
   };
 

@@ -1,15 +1,38 @@
-# Environment Variables Template
-# 
-# INSTRUCTIONS:
-# 1. Create a file named `.env.local` in the project root (d:\resumio\Resumio\)
-# 2. Get your API key from: https://aistudio.google.com/app/apikey
-# 3. Add this line to `.env.local`:
+# Environment Setup
 #
-#    GEMINI_API_KEY=AIzaSyABC123...your_actual_key_here
+# 1) Copy .env.example to .env.local
+# 2) Fill Gemini and Firebase values
+# 3) Restart dev server
 #
-# 4. Restart the dev server (npm run dev)
+# Required keys:
+# GEMINI_API_KEY=your_gemini_api_key_here
 #
-# Note: .env.local is gitignored, so it won't be committed to version control
-
-# For deployment (Vercel/Netlify):
-# Add GEMINI_API_KEY as an environment variable in your deployment platform settings
+# NEXT_PUBLIC_FIREBASE_API_KEY=...
+# NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
+# NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
+# NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
+# NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
+# NEXT_PUBLIC_FIREBASE_APP_ID=...
+#
+# Optional:
+# NEXT_PUBLIC_BASE_URL=http://localhost:3000
+# NEXT_PUBLIC_APP_URL=http://localhost:3000
+#
+# Stripe server keys:
+# STRIPE_SECRET_KEY=...
+# STRIPE_WEBHOOK_SECRET=...
+# STRIPE_PRICE_PRO_MONTHLY_USD=...
+# STRIPE_PRICE_PRO_YEARLY_USD=...
+# STRIPE_PRICE_PRO_MONTHLY_INR=...
+# STRIPE_PRICE_PRO_YEARLY_INR=...
+# STRIPE_DEFAULT_TRIAL_DAYS=7
+# STRIPE_ALLOWED_COUPONS=WELCOME10,RESUMIO20
+#
+# Firebase Admin (server-only):
+# FIREBASE_PROJECT_ID=...
+# FIREBASE_CLIENT_EMAIL=...
+# FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+# ADMIN_EMAILS=founder@example.com,ops@example.com
+#
+# Deployment note:
+# Add the same variables in your hosting provider settings (Netlify/Vercel).

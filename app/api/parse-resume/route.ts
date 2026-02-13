@@ -5,9 +5,36 @@ import { runGeminiPromptAsJson } from "@/lib/gemini";
 import { computeAtsScore } from "@/lib/ats";
 import { normalizeResume } from "@/lib/resume";
 import { ResumeData } from "@/lib/types";
+import { enforceIpRateLimit, rateLimitErrorResponse } from "@/lib/server/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
+    const burst = enforceIpRateLimit(request, {
+      key: "api_parse_resume_burst",
+      limit: 5,
+      windowMs: 60 * 1000,
+    });
+    if (!burst.allowed) {
+      return rateLimitErrorResponse({
+        message: "Too many parse requests. Please slow down.",
+        limit: burst.limit,
+        resetAt: burst.resetAt,
+      });
+    }
+
+    const hourly = enforceIpRateLimit(request, {
+      key: "api_parse_resume_hourly",
+      limit: 30,
+      windowMs: 60 * 60 * 1000,
+    });
+    if (!hourly.allowed) {
+      return rateLimitErrorResponse({
+        message: "Hourly parse limit reached. Please try again later.",
+        limit: hourly.limit,
+        resetAt: hourly.resetAt,
+      });
+    }
+
     const formData = await request.formData();
     const file = formData.get("file") as File;
     const jobDescription = formData.get("jobDescription") as string | null;
@@ -15,6 +42,12 @@ export async function POST(request: NextRequest) {
     if (!file) {
       return NextResponse.json(
         { error: "No file provided" },
+        { status: 400 }
+      );
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: "File is too large. Please upload files up to 5MB." },
         { status: 400 }
       );
     }
@@ -57,9 +90,8 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("Error parsing resume:", error);
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json(
-      { error: `Failed to parse resume: ${errorMessage}` },
+      { error: "Failed to parse resume. Please verify the file format and try again." },
       { status: 500 }
     );
   }

@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuthResume } from "@/components/providers/AuthResumeProvider";
+import { getAuthHeaders } from "@/lib/client-auth";
 
 interface GenerateForm {
   name: string;
@@ -23,6 +25,7 @@ interface GenerateForm {
 }
 
 export function AIModePanel() {
+  const { isPro } = useAuthResume();
   const { setResume, setLoading, isLoading } = useResumeStore();
   const [form, setForm] = useState<GenerateForm>({
     name: "",
@@ -45,6 +48,10 @@ export function AIModePanel() {
       toast.error("Please fill out role and skills to guide Gemini");
       return;
     }
+    if (action === "regenerate" && !isPro) {
+      toast.info("Upgrade to Pro to unlock unlimited section regeneration.");
+      return;
+    }
     let timeoutId: number | undefined;
     const controller = new AbortController();
     try {
@@ -54,7 +61,10 @@ export function AIModePanel() {
 
       const response = await fetch("/api/ai/full-resume", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(await getAuthHeaders()),
+        },
         body: JSON.stringify({
           name: form.name,
           email: form.email,
@@ -152,6 +162,14 @@ export function AIModePanel() {
             onChange={(event) => handleChange("goals", event.target.value)}
           />
         </Field>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+          <p className="font-semibold uppercase tracking-wider text-slate-500">Prompt quality tips</p>
+          <ul className="mt-2 space-y-1">
+            <li>• Add 3-6 concrete skills and target role keywords.</li>
+            <li>• Mention measurable outcomes you want highlighted.</li>
+            <li>• Keep guidance specific (domain, seniority, impact focus).</li>
+          </ul>
+        </div>
         <div className="flex flex-wrap gap-3">
           <Button onClick={() => handleGenerate("generate")} disabled={isLoading.ai}>
             {isLoading.ai ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
@@ -161,6 +179,11 @@ export function AIModePanel() {
             <Wand2 className="mr-2 h-4 w-4" /> Improve sections
           </Button>
         </div>
+        {!isPro ? (
+          <p className="text-xs text-amber-700">
+            Pro unlocks unlimited regenerations and advanced AI refinement.
+          </p>
+        ) : null}
         <p className="text-sm text-slate-500">
           Gemini focuses on action verbs, metrics, and ATS keywords. You can still edit any section after generation.
         </p>

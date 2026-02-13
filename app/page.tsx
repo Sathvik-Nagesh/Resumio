@@ -14,6 +14,7 @@ import { FeatureHighlights } from "@/components/landing/FeatureHighlights";
 import { SectionHeading } from "@/components/common/SectionHeading";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
 
 const modes = [
   {
@@ -46,6 +47,9 @@ export default function Home() {
   return (
     <div className="relative min-h-screen bg-[#f7f7f4] pb-24">
       <main className="container mx-auto max-w-[1600px] px-8 pt-0 pb-20 sm:px-12 lg:px-16 xl:px-20">
+        <div className="flex justify-end pt-6">
+          <GoogleAuthButton />
+        </div>
         <Hero />
 
         <section className="mt-16 space-y-10" id="modes">
@@ -104,6 +108,9 @@ export default function Home() {
               </Button>
               <Button asChild variant="outline">
                 <Link href="/studio#ats">See ATS analyzer</Link>
+              </Button>
+              <Button asChild variant="subtle">
+                <Link href="/pricing">View pricing</Link>
               </Button>
             </div>
             <p className="text-sm text-slate-500">Create a profile to prefill contact details and personalize exports; you can update your display name in Settings.</p>

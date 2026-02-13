@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AutosizeTextarea } from "@/components/ui/autosize-textarea";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { computeAtsScore } from "@/lib/ats";
 
 export function UploadModePanel() {
     const {
@@ -135,7 +136,6 @@ export function UploadModePanel() {
                     {jobDescription && resume && (
                         <Button
                             onClick={() => {
-                                const { computeAtsScore } = require("@/lib/ats");
                                 const newScore = computeAtsScore(resume, jobDescription);
                                 setAtsScore(newScore);
                                 toast.success("ATS score updated with job description!");

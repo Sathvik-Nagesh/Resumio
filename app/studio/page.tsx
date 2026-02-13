@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useResumeStore } from "@/hooks/useResumeStore";
@@ -20,12 +20,18 @@ import { toast } from "sonner";
 import { exportAsTxt } from "@/lib/export-txt";
 import { exportAsPdf } from "@/lib/export-pdf";
 import { exportAsDocx } from "@/lib/export-docx";
+import { GoogleAuthButton } from "@/components/auth/GoogleAuthButton";
+import { UpgradeModal } from "@/components/premium/UpgradeModal";
+import { CloudSyncStatus } from "@/components/premium/CloudSyncStatus";
+import { useAuthResume } from "@/components/providers/AuthResumeProvider";
+import { isPremiumTemplate } from "@/lib/premium";
+import { trackEvent } from "@/lib/analytics";
 
 export default function StudioPage() {
   const { resume, template } = useResumeStore();
+  const { isPro, plan } = useAuthResume();
   const [zoom, setZoom] = useState(75);
-  const [isExporting, setIsExporting] = useState(false);
-  const previewRef = useRef<HTMLDivElement>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   const zoomLevels = [50, 60, 75, 85, 100];
 
@@ -44,8 +50,25 @@ export default function StudioPage() {
   };
 
   const handleExport = async (format: 'pdf' | 'docx' | 'txt') => {
-    setIsExporting(true);
+    if (!isPro && (format === "docx" || isPremiumTemplate(template))) {
+      void trackEvent({
+        event: "paywall_hit",
+        source: "studio_export",
+        plan: "free",
+        metadata: { format, template },
+      });
+      setShowUpgradeModal(true);
+      toast.info("Upgrade to Pro to unlock this export option.");
+      return;
+    }
+
     try {
+      void trackEvent({
+        event: "export_start",
+        source: "studio",
+        plan: isPro ? "pro" : "free",
+        metadata: { format, template },
+      });
       if (format === 'txt') {
         exportAsTxt(resume);
         toast.success("Resume exported as TXT!");
@@ -53,13 +76,15 @@ export default function StudioPage() {
         await exportAsDocx(resume);
         toast.success("Resume exported as DOCX!");
       } else if (format === 'pdf') {
-        if (!previewRef.current) {
-          toast.error("Preview not ready. Please try again.");
-          return;
-        }
-        await exportAsPdf(resume, previewRef.current);
+        await exportAsPdf(resume);
         toast.success("Resume exported as PDF!");
       }
+      void trackEvent({
+        event: "export_success",
+        source: "studio",
+        plan: isPro ? "pro" : "free",
+        metadata: { format, template },
+      });
     } catch (error) {
       // In development show the full error in the console for debugging.
       if (process.env.NODE_ENV !== "production") {
@@ -101,8 +126,13 @@ export default function StudioPage() {
 
       // Keep user-facing message sanitized (no sensitive details).
       toast.error(`Failed to export as ${format.toUpperCase()}`);
+      void trackEvent({
+        event: "export_error",
+        source: "studio",
+        plan: isPro ? "pro" : "free",
+        metadata: { format, template },
+      });
     } finally {
-      setIsExporting(false);
     }
   };
 
@@ -123,33 +153,50 @@ export default function StudioPage() {
               <div className="flex flex-col gap-1">
                 <p className="text-sm font-semibold uppercase tracking-[0.35em] text-slate-500">Resumio Studio</p>
                 <h1 className="text-2xl font-semibold text-slate-900 lg:text-3xl">
-                  Craft Sathvik-grade resumes
+                  Craft job-ready resumes
                 </h1>
               </div>
             </div>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button size="lg" className="gap-2">
-                  <Download className="h-4 w-4" />
-                  Export Resume
+            <div className="flex items-center gap-3">
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wider ${isPro ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>
+                {plan}
+              </span>
+              {!isPro ? (
+                <Button variant="subtle" size="sm" onClick={() => setShowUpgradeModal(true)}>
+                  Upgrade
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => handleExport('pdf')} className="gap-2">
-                  <FileText className="h-4 w-4" />
-                  Export as PDF
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport('docx')} className="gap-2">
-                  <File className="h-4 w-4" />
-                  Export as DOCX
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleExport('txt')} className="gap-2">
-                  <FileText className="h-4 w-4" />
-                  Export as TXT
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              ) : null}
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/pricing">Pricing</Link>
+              </Button>
+              <GoogleAuthButton />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button size="lg" className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Export Resume
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => handleExport('pdf')} className="gap-2">
+                    <FileText className="h-4 w-4" />
+                    Export as PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('docx')} className="gap-2">
+                    <File className="h-4 w-4" />
+                    Export as DOCX
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('txt')} className="gap-2">
+                    <FileText className="h-4 w-4" />
+                    Export as TXT
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+          <div className="mt-3 flex justify-end">
+            <CloudSyncStatus />
           </div>
         </div>
       </header>
@@ -210,7 +257,6 @@ export default function StudioPage() {
             <div className="flex-1 overflow-auto rounded-[32px] border border-white/40 bg-white/60 p-8 shadow-[0_40px_120px_rgba(15,23,42,0.18)] backdrop-blur-xl">
               <div className="flex min-h-full items-start justify-center">
                 <div
-                  ref={previewRef}
                   style={{
                     transform: `scale(${zoom / 100})`,
                     transformOrigin: "top center",
@@ -223,6 +269,7 @@ export default function StudioPage() {
           </div>
         </div>
       </div>
+      <UpgradeModal open={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
     </div>
   );
 }

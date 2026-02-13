@@ -1,87 +1,152 @@
 import { ResumeData } from "@/lib/types";
 
-export async function exportAsPdf(resume: ResumeData, templateElement: HTMLElement): Promise<void> {
-    // Dynamically import html2canvas and jspdf
-    const html2canvas = (await import("html2canvas")).default;
-    const { jsPDF } = await import("jspdf");
+const stripMarkdown = (value: string) => value.replace(/\*\*(.*?)\*\*/g, "$1").trim();
 
-    // Create a container for the clone that is "visible" to the browser but off-screen
-    const container = document.createElement("div");
-    container.style.position = "fixed";
-    container.style.left = "-10000px";
-    container.style.top = "0";
-    container.style.width = "816px"; // A4 width at 96 DPI
-    container.style.zIndex = "-9999";
-    document.body.appendChild(container);
+export async function exportAsPdf(resume: ResumeData): Promise<void> {
+  const { jsPDF } = await import("jspdf");
 
-    // Clone the element
-    const clone = templateElement.cloneNode(true) as HTMLElement;
-    clone.style.transform = "scale(1)";
-    clone.style.width = "100%";
-    clone.style.height = "auto";
-    clone.style.margin = "0";
-    container.appendChild(clone);
+  const pdf = new jsPDF({
+    orientation: "portrait",
+    unit: "mm",
+    format: "a4",
+    putOnlyUsedFonts: true,
+  });
 
-    try {
-        // Wait a bit for the clone to render (fonts, images, etc.)
-        await new Promise((resolve) => setTimeout(resolve, 500));
+  const pageWidth = 210;
+  const pageHeight = 297;
+  const marginX = 16;
+  const maxTextWidth = pageWidth - marginX * 2;
+  const bottomLimit = pageHeight - 16;
+  let y = 18;
 
-        // Capture with html2canvas
-        const canvas = await html2canvas(clone, {
-            scale: 2, // High resolution
-            useCORS: true,
-            logging: false,
-            backgroundColor: "#ffffff",
-            width: 816,
-            windowWidth: 816,
-        });
+  const ensureSpace = (minRequired = 8) => {
+    if (y + minRequired <= bottomLimit) return;
+    pdf.addPage();
+    y = 18;
+  };
 
-        // Calculate PDF dimensions
-        const imgWidth = 210; // A4 width in mm
-        const pageHeight = 297; // A4 height in mm
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+  const writeWrapped = (text: string, fontSize = 10, lineHeight = 5, indent = 0) => {
+    const clean = stripMarkdown(text || "");
+    if (!clean) return;
+    pdf.setFontSize(fontSize);
+    const lines = pdf.splitTextToSize(clean, maxTextWidth - indent);
+    lines.forEach((line: string) => {
+      ensureSpace(lineHeight);
+      pdf.text(line, marginX + indent, y);
+      y += lineHeight;
+    });
+  };
 
-        // Create PDF
-        const pdf = new jsPDF({
-            orientation: "portrait",
-            unit: "mm",
-            format: "a4",
-        });
+  const writeHeading = (title: string) => {
+    ensureSpace(10);
+    pdf.setFont("helvetica", "bold");
+    pdf.setFontSize(12);
+    pdf.text(title.toUpperCase(), marginX, y);
+    y += 5;
+    pdf.setLineWidth(0.4);
+    pdf.line(marginX, y, pageWidth - marginX, y);
+    y += 4;
+    pdf.setFont("helvetica", "normal");
+  };
 
-        // Use JPEG with 0.98 quality (very high quality but much smaller size than PNG)
-        const imgData = canvas.toDataURL("image/jpeg", 0.98);
+  const writeBullet = (text: string) => {
+    const clean = stripMarkdown(text);
+    if (!clean) return;
+    ensureSpace(5);
+    pdf.setFontSize(10);
+    pdf.text("•", marginX + 1, y);
+    const lines = pdf.splitTextToSize(clean, maxTextWidth - 8);
+    lines.forEach((line: string, idx: number) => {
+      ensureSpace(5);
+      pdf.text(line, marginX + 5, y);
+      y += 5;
+      if (idx === 0 && lines.length === 1) return;
+    });
+  };
 
-        // Handle multi-page
-        let heightLeft = imgHeight;
-        let position = 0;
-        let page = 1;
+  // Header
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(20);
+  writeWrapped(resume.contact.name || "Candidate Name", 20, 8);
 
-        pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+  pdf.setFont("helvetica", "normal");
+  writeWrapped(resume.contact.title || "", 11, 6);
 
-        while (heightLeft > 0) {
-            position = heightLeft - imgHeight;
-            pdf.addPage();
-            // Shift image up for next page
-            pdf.addImage(imgData, "JPEG", 0, -pageHeight * page, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-            page++;
-        }
+  const contactLine = [resume.contact.email, resume.contact.phone, resume.contact.location]
+    .filter(Boolean)
+    .join("  |  ");
+  writeWrapped(contactLine, 9, 5);
+  y += 2;
 
-        // Save using native jsPDF save method which handles filenames better
-        // Use optional chaining and a fallback so we don't access `name` when `contact` is undefined
-        const safeName = (resume.contact?.name || "Resume").replace(/[^a-z0-9]/gi, "_");
-        const fileName = `${safeName}_Resume.pdf`;
+  // Summary
+  writeHeading("Professional Summary");
+  writeWrapped(resume.summary, 10, 5);
+  y += 3;
 
-        pdf.save(fileName);
+  // Experience
+  writeHeading("Experience");
+  resume.experience.forEach((exp) => {
+    ensureSpace(12);
+    pdf.setFont("helvetica", "bold");
+    writeWrapped(`${exp.role} | ${exp.company}`, 11, 5);
+    pdf.setFont("helvetica", "normal");
+    writeWrapped(`${exp.location} | ${exp.startDate} - ${exp.endDate}`, 9, 5);
+    exp.bullets.forEach((bullet) => writeBullet(bullet));
+    y += 2;
+  });
 
-    } catch (error) {
-        console.error("PDF Export failed:", error);
-        throw error;
-    } finally {
-        // Clean up
-        if (document.body.contains(container)) {
-            document.body.removeChild(container);
-        }
-    }
+  // Education
+  if (resume.education.length > 0) {
+    writeHeading("Education");
+    resume.education.forEach((edu) => {
+      ensureSpace(10);
+      pdf.setFont("helvetica", "bold");
+      writeWrapped(edu.degree, 10, 5);
+      pdf.setFont("helvetica", "normal");
+      writeWrapped(`${edu.school}, ${edu.location}`, 9, 5);
+      writeWrapped(`${edu.startDate} - ${edu.endDate}`, 9, 5);
+      (edu.details || []).forEach((detail) => writeBullet(detail));
+      y += 1;
+    });
+  }
+
+  // Skills
+  if (resume.skills.length > 0) {
+    writeHeading("Skills");
+    resume.skills.forEach((group) => {
+      const line = `${group.label}: ${group.skills.join(", ")}`;
+      writeWrapped(line, 9, 5);
+    });
+    y += 2;
+  }
+
+  // Projects
+  if (resume.projects.length > 0) {
+    writeHeading("Projects");
+    resume.projects.forEach((project) => {
+      ensureSpace(10);
+      pdf.setFont("helvetica", "bold");
+      writeWrapped(project.name, 10, 5);
+      pdf.setFont("helvetica", "normal");
+      writeWrapped(project.description, 9, 5);
+      if (project.technologies.length > 0) {
+        writeWrapped(`Technologies: ${project.technologies.join(", ")}`, 9, 5);
+      }
+      if (project.impact) {
+        writeWrapped(`Impact: ${project.impact}`, 9, 5);
+      }
+      y += 1;
+    });
+  }
+
+  // Certifications
+  if (resume.certifications.length > 0) {
+    writeHeading("Certifications");
+    resume.certifications.forEach((cert) => {
+      writeWrapped(`${cert.name} - ${cert.issuer} (${cert.year})`, 9, 5);
+    });
+  }
+
+  const safeName = (resume.contact.name || "Resume").replace(/[^a-z0-9]/gi, "_");
+  pdf.save(`${safeName}_Resume.pdf`);
 }

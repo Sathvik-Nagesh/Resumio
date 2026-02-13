@@ -1,95 +1,123 @@
 # Resumio
 
-Resumio is an AI‑powered resume builder that helps you craft ATS‑friendly, beautifully designed resumes in seconds. It offers three creation modes: upload an existing resume, start from a template, or generate a draft with Gemini AI. The UI features auto‑resizing textareas, markdown rendering, and a modern glassmorphism design.
+Resumio is an AI-powered resume studio built with Next.js. It supports upload parsing, guided template editing, full-resume generation with Gemini, ATS scoring, and export to PDF/DOCX/TXT.
 
 ## Features
 
-- **AI‑generated resumes** with personal details (name, email, phone, location)
-- **Three creation modes**: Upload, Template, AI
-- **Auto‑resizing textareas** (no scrollbars)
-- **Markdown support** (bold, etc.) in preview
-- **ATS scoring & suggestions**
-- **Export** to PDF, DOCX, TXT
-- **Responsive design** with vibrant colors and micro‑animations
-- **Ready for Netlify** deployment (see `netlify.toml`)
+- Three resume creation modes: Upload, Template, AI
+- Gemini-powered summary and full resume generation
+- ATS scoring with keyword and impact feedback
+- Export as PDF, DOCX, and TXT
+- Google sign-in (Firebase Auth)
+- Cloud resume persistence (Firestore autosave/load per user)
+- Premium plan framework (free/pro), upgrade modal, and feature gates
+- Native text-based PDF export (no screenshot rendering)
 
-## Getting Started
+## Tech Stack
 
-1. Clone the repo:
+- Next.js (App Router), React, TypeScript
+- Tailwind CSS, Zustand
+- Gemini API (`GEMINI_API_KEY`)
+- Firebase Auth + Firestore (Google login and cloud storage)
 
-```bash
-git clone https://github.com/Sathvik-Nagesh/Resumio.git
-cd Resumio
-```
+## Local Setup
 
-2. Install dependencies:
-
+1. Install dependencies:
 ```bash
 npm install
 ```
 
-3. Create a `.env.local` file with your Gemini API key:
-
+2. Create `.env.local` from `.env.example` and fill values:
+```bash
+cp .env.example .env.local
 ```
-GEMINI_API_KEY=your_api_key_here
-```
 
-4. Run the development server:
-
+3. Start dev server:
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the app.
+4. Open `http://localhost:3000`.
 
-## Deployment
+## Required Environment Variables
 
-The project includes a `netlify.toml` file for easy deployment on Netlify.
+### Gemini
+- `GEMINI_API_KEY`
 
-1. Push your code to GitHub (already done).
-2. In Netlify, create a new site from the GitHub repository.
-3. Add the environment variable `GEMINI_API_KEY` in Site Settings → Build & Deploy → Environment.
-4. Deploy – Netlify will run `npm run build` and serve the site.
+### Firebase (client)
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
 
-## Contributing
+### Stripe + server auth
+- `NEXT_PUBLIC_APP_URL`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `STRIPE_PRICE_PRO_MONTHLY_USD`
+- `STRIPE_PRICE_PRO_YEARLY_USD`
+- `STRIPE_PRICE_PRO_MONTHLY_INR`
+- `STRIPE_PRICE_PRO_YEARLY_INR`
+- `STRIPE_DEFAULT_TRIAL_DAYS` (optional)
+- `STRIPE_ALLOWED_COUPONS` (optional)
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_CLIENT_EMAIL`
+- `FIREBASE_PRIVATE_KEY`
+- `ADMIN_EMAILS` (comma-separated, for `/admin/metrics`)
 
-Feel free to open issues or submit pull requests. Ensure code passes `npm run lint` and the app builds successfully.
+## Firebase Setup Notes
 
-## License
+- Enable **Authentication > Google** in Firebase Console.
+- Create Firestore database.
+- Recommended Firestore structure:
+  - `users/{uid}/resumes/default`
+- Set Firestore rules to allow authenticated users to read/write only their own documents.
+- Full setup guide: `FIREBASE_SETUP.md`
+- Billing setup guide: `STRIPE_SETUP.md`
 
-MIT
-
-## Getting Started
-
-First, run the development server:
+## Validation
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run lint
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Premium Model (Current Implementation)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Plan states: `free` and `pro`
+- Upgrade flow: Stripe Checkout + Stripe Billing Portal
+- Optional free trial + coupon support in checkout
+- Pricing analytics events (`/api/analytics/event`) with rate limiting
+- Gated features now:
+  - Premium templates
+  - DOCX export on free plan
+  - AI section regeneration on free plan
+- Free plan remains usable:
+  - Upload/template editing
+  - Native PDF and TXT export
+  - Basic AI generation/improvements with daily limits
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Current price points
+- USD: `$9/month` or `$79/year`
+- INR: `₹599/month` or `₹4,999/year`
 
-## Learn More
+Plan state is synced via Stripe webhooks to Firestore and enforced server-side for premium AI actions.
 
-To learn more about Next.js, take a look at the following resources:
+## Security and Input Hygiene
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- AI and billing endpoints validate inputs with strict `zod` schemas.
+- Text payloads are normalized and length-limited server-side.
+- Stripe webhook processing is idempotent (`stripeWebhookEvents/{eventId}`).
+- Premium enforcement is server-side, not only UI-based.
+- Abuse protection uses layered rate limits (burst + hourly/daily) on AI, billing, parse, analytics, admin, and logging APIs.
+- Rate-limited responses return HTTP `429` with `Retry-After`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Admin Analytics
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Dashboard: `/admin/metrics`
+- Protected by Firebase auth + `ADMIN_EMAILS` allowlist.
+- Uses aggregated events from:
+  - `analyticsEvents`
+  - `stripeWebhookLogs`

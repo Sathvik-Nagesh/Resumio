@@ -1,4 +1,5 @@
 import { ResumeData } from "@/lib/types";
+import { saveAs } from "file-saver";
 
 export function exportAsTxt(resume: ResumeData): void {
     let text = "";
@@ -80,7 +81,6 @@ export function exportAsTxt(resume: ResumeData): void {
 
     // Create and download
     const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-    const { saveAs } = require("file-saver");
     const safeName = (resume.contact.name || "Resume").replace(/[^a-z0-9]/gi, "_");
     saveAs(blob, `${safeName}_Resume.txt`);
 }
