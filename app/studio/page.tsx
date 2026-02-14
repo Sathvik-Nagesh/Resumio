@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,7 +29,7 @@ import { isPremiumTemplate } from "@/lib/premium";
 import { trackEvent } from "@/lib/analytics";
 import { ONBOARDING_STORAGE_KEY } from "@/lib/onboarding";
 
-export default function StudioPage() {
+function StudioPageContent() {
   const searchParams = useSearchParams();
   const { resume, template } = useResumeStore();
   const { isPro, plan } = useAuthResume();
@@ -347,5 +347,13 @@ export default function StudioPage() {
         continueLabel="Keep exploring free"
       />
     </div>
+  );
+}
+
+export default function StudioPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#f7f7f4]" />}>
+      <StudioPageContent />
+    </Suspense>
   );
 }
