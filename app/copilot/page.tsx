@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Briefcase, Mail, MapPin, ShieldCheck, Sparkles } from "lucide-react";
+import { Activity, ArrowLeft, Briefcase, Mail, MapPin, ShieldCheck, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import { useResumeStore } from "@/hooks/useResumeStore";
@@ -10,7 +10,17 @@ import { useAuthResume } from "@/components/providers/AuthResumeProvider";
 import { UpgradeModal } from "@/components/premium/UpgradeModal";
 import { getAuthHeaders } from "@/lib/client-auth";
 import { trackEvent } from "@/lib/analytics";
-import { AutoApplyQueueItem, AutoApplyQueueStatus, AutoApplyRule, JobAlertPreferences, JobApplicationStatus, JobMatch, ResumeData, SavedJobApplication } from "@/lib/types";
+import {
+  AutoApplyQueueItem,
+  AutoApplyQueueStatus,
+  AutoApplyRule,
+  AutomationActivityItem,
+  JobAlertPreferences,
+  JobApplicationStatus,
+  JobMatch,
+  ResumeData,
+  SavedJobApplication,
+} from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -28,6 +38,10 @@ const defaultAutoRule: AutoApplyRule = {
   locations: [],
   remoteOnly: true,
   minMatchScore: 75,
+  requireApproval: true,
+  dryRun: true,
+  dailyApprovalLimit: 15,
+  allowedDomains: [],
 };
 
 const toSavedJobId = (source: string, id: string) => `${source}-${id}`.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 180);
@@ -65,6 +79,7 @@ export default function CopilotPage() {
   const [autoRule, setAutoRule] = useState<AutoApplyRule>(defaultAutoRule);
   const [savingAutoRule, setSavingAutoRule] = useState(false);
   const [autoQueue, setAutoQueue] = useState<AutoApplyQueueItem[]>([]);
+  const [automationActivity, setAutomationActivity] = useState<AutomationActivityItem[]>([]);
   const [loadingAutoQueue, setLoadingAutoQueue] = useState(false);
   const [queueingJobId, setQueueingJobId] = useState<string | null>(null);
   const [networkMode, setNetworkMode] = useState<"recruiter" | "referral" | "followup">("recruiter");
@@ -145,6 +160,7 @@ export default function CopilotPage() {
     if (!user) {
       setAutoRule(defaultAutoRule);
       setAutoQueue([]);
+      setAutomationActivity([]);
       return;
     }
     setLoadingAutoQueue(true);
@@ -166,6 +182,7 @@ export default function CopilotPage() {
       if (queueRes.ok) {
         const payload = await queueRes.json();
         setAutoQueue(Array.isArray(payload.items) ? payload.items : []);
+        setAutomationActivity(Array.isArray(payload.activity) ? payload.activity : []);
       }
     } catch {
       // Best effort for optional automation framework.
@@ -736,7 +753,7 @@ export default function CopilotPage() {
         </header>
 
         <section className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
-          <article className="rounded-3xl border border-slate-200/70 bg-white p-7">
+          <article id="alerts" className="rounded-3xl border border-slate-200/70 bg-white p-7">
             <div className="mb-5 flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-amber-600" />
               <h2 className="text-2xl font-semibold text-slate-900">Find matching jobs</h2>
@@ -1109,6 +1126,60 @@ export default function CopilotPage() {
                   }
                 />
               </label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Daily approval limit
+                <Input
+                  className="mt-1"
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={autoRule.dailyApprovalLimit}
+                  onChange={(event) =>
+                    setAutoRule((prev) => ({
+                      ...prev,
+                      dailyApprovalLimit: Math.max(1, Math.min(100, Number(event.target.value || 1))),
+                    }))
+                  }
+                />
+              </label>
+              <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                Allowed apply domains (comma-separated)
+                <Input
+                  className="mt-1"
+                  value={autoRule.allowedDomains.join(", ")}
+                  onChange={(event) =>
+                    setAutoRule((prev) => ({
+                      ...prev,
+                      allowedDomains: event.target.value
+                        .split(",")
+                        .map((value) => value.trim().toLowerCase())
+                        .filter(Boolean),
+                    }))
+                  }
+                  placeholder="linkedin.com, greenhouse.io, lever.co"
+                />
+              </label>
+              <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={autoRule.requireApproval}
+                  onChange={(event) => setAutoRule((prev) => ({ ...prev, requireApproval: event.target.checked }))}
+                  className="h-4 w-4"
+                />
+                Human approval required for every action
+              </label>
+              <label className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={autoRule.dryRun}
+                  onChange={(event) => setAutoRule((prev) => ({ ...prev, dryRun: event.target.checked }))}
+                  className="h-4 w-4"
+                />
+                Dry-run mode (no external auto-apply attempts)
+              </label>
+              <p className="text-xs text-slate-500">
+                Guardrails are enforced server-side: allowlisted domains, daily approval limits, and activity logging.
+              </p>
               <Button onClick={() => void saveAutomationRule()} disabled={savingAutoRule}>
                 {savingAutoRule ? "Saving..." : "Save automation rule"}
               </Button>
@@ -1150,6 +1221,38 @@ export default function CopilotPage() {
               )}
             </div>
           </article>
+        </section>
+
+        <section className="rounded-3xl border border-slate-200/70 bg-white p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="inline-flex items-center gap-2 text-xl font-semibold text-slate-900">
+              <Activity className="h-5 w-5 text-slate-700" />
+              Automation activity
+            </h3>
+            <p className="text-sm text-slate-500">{automationActivity.length} events</p>
+          </div>
+          {automationActivity.length === 0 ? (
+            <p className="text-sm text-slate-500">No activity events yet.</p>
+          ) : (
+            <div className="space-y-3">
+              {automationActivity.map((event) => (
+                <article key={event.id} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-slate-900">{event.action.replace("_", " ")}</p>
+                    <span
+                      className={`rounded-full px-2 py-1 text-[11px] font-semibold uppercase tracking-wider ${
+                        event.status === "allowed" ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-800"
+                      }`}
+                    >
+                      {event.status}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-600">{event.reason}</p>
+                  <p className="mt-2 text-xs text-slate-500">{new Date(event.createdAt).toLocaleString()}</p>
+                </article>
+              ))}
+            </div>
+          )}
         </section>
 
         <section className="rounded-3xl border border-slate-200/70 bg-white p-6">

@@ -15,6 +15,10 @@ const defaultRule = {
   locations: [],
   remoteOnly: true,
   minMatchScore: 75,
+  requireApproval: true,
+  dryRun: true,
+  dailyApprovalLimit: 15,
+  allowedDomains: [],
 };
 
 export async function GET(request: NextRequest) {
@@ -58,6 +62,10 @@ export async function GET(request: NextRequest) {
       locations: Array.isArray(data.locations) ? data.locations : [],
       remoteOnly: data.remoteOnly !== false,
       minMatchScore: typeof data.minMatchScore === "number" ? data.minMatchScore : 75,
+      requireApproval: data.requireApproval !== false,
+      dryRun: data.dryRun !== false,
+      dailyApprovalLimit: typeof data.dailyApprovalLimit === "number" ? data.dailyApprovalLimit : 15,
+      allowedDomains: Array.isArray(data.allowedDomains) ? data.allowedDomains : [],
     },
   });
 }

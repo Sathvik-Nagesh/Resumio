@@ -36,7 +36,7 @@ export function Hero() {
             </Link>
           </Button>
           <Button asChild variant="subtle" size="lg">
-            <Link href="#modes">Explore templates</Link>
+            <Link href="/onboarding">Guided setup</Link>
           </Button>
           <Button asChild variant="outline" size="lg">
             <Link href="/interview">Try Interview Copilot</Link>

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useResumeStore } from "@/hooks/useResumeStore";
 import { UploadModePanel } from "@/components/studio/modes/UploadModePanel";
@@ -26,14 +27,51 @@ import { CloudSyncStatus } from "@/components/premium/CloudSyncStatus";
 import { useAuthResume } from "@/components/providers/AuthResumeProvider";
 import { isPremiumTemplate } from "@/lib/premium";
 import { trackEvent } from "@/lib/analytics";
+import { ONBOARDING_STORAGE_KEY } from "@/lib/onboarding";
 
 export default function StudioPage() {
+  const searchParams = useSearchParams();
   const { resume, template } = useResumeStore();
   const { isPro, plan } = useAuthResume();
   const [zoom, setZoom] = useState(75);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<"upload" | "templates" | "ai">("upload");
+  const [showOnboardingPrompt, setShowOnboardingPrompt] = useState(false);
 
   const zoomLevels = [50, 60, 75, 85, 100];
+
+  useEffect(() => {
+    const requestedTab = searchParams.get("tab");
+    if (requestedTab === "upload" || requestedTab === "templates" || requestedTab === "ai") {
+      setActiveTab(requestedTab);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const raw = window.localStorage.getItem(ONBOARDING_STORAGE_KEY);
+    if (!raw) {
+      setShowOnboardingPrompt(true);
+      return;
+    }
+    try {
+      const parsed = JSON.parse(raw) as Record<string, boolean>;
+      const finished = ["resume", "match", "alerts", "prep"].every((key) => parsed[key] === true);
+      setShowOnboardingPrompt(!finished);
+    } catch {
+      setShowOnboardingPrompt(true);
+    }
+  }, []);
+
+  const dismissOnboardingPrompt = () => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(
+        ONBOARDING_STORAGE_KEY,
+        JSON.stringify({ resume: true, match: true, alerts: true, prep: true })
+      );
+    }
+    setShowOnboardingPrompt(false);
+  };
 
   const handleZoomIn = () => {
     const currentIndex = zoomLevels.indexOf(zoom);
@@ -217,10 +255,27 @@ export default function StudioPage() {
 
       {/* Main Content - Full Width Two Column Layout */}
       <div className="container mx-auto max-w-[1920px] px-8 lg:px-12 xl:px-16">
+        {showOnboardingPrompt ? (
+          <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-5 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-emerald-900">
+                New here? Use the guided setup to build your resume, run job matching, and enable alerts in one flow.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" asChild>
+                  <Link href="/onboarding">Start onboarding</Link>
+                </Button>
+                <Button size="sm" variant="outline" onClick={dismissOnboardingPrompt}>
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : null}
         <div className="flex min-h-[calc(100vh-240px)] gap-8 py-8 lg:gap-12">
           {/* Left Column - Controls */}
           <div className="w-full lg:w-[45%] xl:w-[40%]">
-            <Tabs defaultValue="upload" className="space-y-6">
+            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "upload" | "templates" | "ai")} className="space-y-6">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="upload" className="text-base">Upload</TabsTrigger>
                 <TabsTrigger value="templates" className="text-base">Templates</TabsTrigger>

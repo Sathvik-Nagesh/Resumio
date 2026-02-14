@@ -196,6 +196,21 @@ export const autoApplyRuleSchema = z.object({
   locations: z.array(z.string().max(120)).max(20),
   remoteOnly: z.boolean(),
   minMatchScore: z.number().int().min(0).max(100),
+  requireApproval: z.boolean().optional().default(true),
+  dryRun: z.boolean().optional().default(true),
+  dailyApprovalLimit: z.number().int().min(1).max(100).optional().default(15),
+  allowedDomains: z
+    .array(
+      z
+        .string()
+        .trim()
+        .toLowerCase()
+        .max(120)
+        .regex(/^[a-z0-9.-]+$/)
+    )
+    .max(30)
+    .optional()
+    .default([]),
 });
 
 export const autoApplyQueueCreateSchema = z.object({

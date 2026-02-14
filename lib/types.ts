@@ -212,6 +212,10 @@ export interface AutoApplyRule {
   locations: string[];
   remoteOnly: boolean;
   minMatchScore: number;
+  requireApproval: boolean;
+  dryRun: boolean;
+  dailyApprovalLimit: number;
+  allowedDomains: string[];
 }
 
 export type AutoApplyQueueStatus = "pending" | "approved" | "rejected";
@@ -224,4 +228,18 @@ export interface AutoApplyQueueItem {
   matchScore: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export type AutomationActivityStatus = "allowed" | "blocked";
+
+export interface AutomationActivityItem {
+  id: string;
+  action: "queue_add" | "status_change";
+  status: AutomationActivityStatus;
+  reason: string;
+  queueId?: string;
+  targetStatus?: AutoApplyQueueStatus;
+  host?: string | null;
+  dryRun?: boolean;
+  createdAt: string;
 }

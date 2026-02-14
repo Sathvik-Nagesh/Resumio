@@ -15,6 +15,7 @@ import { TemplateVariant } from "@/lib/types";
 import { useAuthResume } from "@/components/providers/AuthResumeProvider";
 import { isPremiumTemplate } from "@/lib/premium";
 import { getAuthHeaders } from "@/lib/client-auth";
+import { UpgradeModal } from "@/components/premium/UpgradeModal";
 
 const steps = [
   { id: "basic", title: "Basics", description: "Contact + title" },
@@ -49,6 +50,8 @@ export function TemplateModePanel() {
     isLoading,
   } = useResumeStore();
   const [step, setStep] = useState(0);
+  const [showTemplateUpgrade, setShowTemplateUpgrade] = useState(false);
+  const isPremiumPreviewLocked = !isPro && isPremiumTemplate(template);
 
   const handleSummaryAI = async (tone: "clarity" | "concise" | "impactful") => {
     if (!resume.summary || resume.summary.trim().length < 10) {
@@ -123,6 +126,11 @@ export function TemplateModePanel() {
           <div className="flex flex-col gap-2">
             <CardTitle>Choose template</CardTitle>
             <CardDescription>Select a glassmorphism layout. Content stays synced when you switch.</CardDescription>
+            {isPremiumPreviewLocked ? (
+              <span className="inline-flex w-fit rounded-full border border-amber-300 bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-amber-900">
+                Preview only
+              </span>
+            ) : null}
           </div>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {resumeTemplates.map((tpl) => (
@@ -135,11 +143,10 @@ export function TemplateModePanel() {
                 isPro={isPro}
                 selected={template === tpl.id}
                 onSelect={() => {
-                  if (isPremiumTemplate(tpl.id) && !isPro) {
-                    toast.info("This template is part of Pro. You can explore Pro options from the Studio header.");
-                    return;
-                  }
                   setTemplate(tpl.id);
+                  if (isPremiumTemplate(tpl.id) && !isPro) {
+                    toast.info("Preview mode enabled for this Pro template. Editing stays locked on free plan.");
+                  }
                 }}
               />
             ))}
@@ -147,7 +154,24 @@ export function TemplateModePanel() {
         </CardHeader>
       </Card>
 
-      <div className="rounded-3xl border border-white/40 bg-white/85 p-6">
+      <div className="relative rounded-3xl border border-white/40 bg-white/85 p-6">
+        {isPremiumPreviewLocked ? (
+          <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
+            <p className="text-sm font-semibold text-amber-900">Pro template preview</p>
+            <p className="mt-1 text-sm text-amber-800">
+              You can view this template style now. Editing controls are paused on free plan.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => setShowTemplateUpgrade(true)}>
+                Unlock this template
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setTemplate("aurora")}>
+                Switch to free template
+              </Button>
+            </div>
+          </div>
+        ) : null}
+        <div className={cn(isPremiumPreviewLocked ? "pointer-events-none opacity-60 select-none" : "")}>
         <div className="flex flex-wrap gap-2">
           {steps.map((item, index) => (
             <Button
@@ -431,7 +455,21 @@ export function TemplateModePanel() {
             </div>
           </div>
         ) : null}
+        </div>
       </div>
+      <UpgradeModal
+        open={showTemplateUpgrade}
+        onClose={() => setShowTemplateUpgrade(false)}
+        title="This template is available in Pro"
+        description="You can preview this layout now. Pro unlocks full editing so you can personalize every section."
+        highlights={[
+          "Edit all sections directly inside this template",
+          "Keep your current content while switching styles",
+          "Access all premium template families for different role types",
+        ]}
+        primaryLabel="See Pro options"
+        continueLabel="Keep previewing free"
+      />
     </div>
   );
 }
