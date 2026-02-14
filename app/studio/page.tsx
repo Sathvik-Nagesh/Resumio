@@ -58,7 +58,12 @@ export default function StudioPage() {
         metadata: { format, template },
       });
       setShowUpgradeModal(true);
-      toast.info("Upgrade to Pro to unlock this export option.");
+      toast.info("This export option is part of Pro.", {
+        action: {
+          label: "View Pro options",
+          onClick: () => setShowUpgradeModal(true),
+        },
+      });
       return;
     }
 
@@ -164,11 +169,20 @@ export default function StudioPage() {
               </span>
               {!isPro ? (
                 <Button variant="subtle" size="sm" onClick={() => setShowUpgradeModal(true)}>
-                  Upgrade
+                  Explore Pro
                 </Button>
               ) : null}
               <Button variant="outline" size="sm" asChild>
                 <Link href="/pricing">Pricing</Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/copilot">Job Copilot</Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/interview">Interview Copilot</Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/analytics">Analytics</Link>
               </Button>
               <GoogleAuthButton />
               <DropdownMenu>
@@ -269,7 +283,14 @@ export default function StudioPage() {
           </div>
         </div>
       </div>
-      <UpgradeModal open={showUpgradeModal} onClose={() => setShowUpgradeModal(false)} />
+      <UpgradeModal
+        open={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        title="This workflow is part of Pro"
+        description="Pro unlocks premium exports and advanced workflows whenever you're ready."
+        primaryLabel="See Pro options"
+        continueLabel="Keep exploring free"
+      />
     </div>
   );
 }

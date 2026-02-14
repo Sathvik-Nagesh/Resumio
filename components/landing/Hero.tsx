@@ -25,7 +25,7 @@ export function Hero() {
           <span className="text-slate-900"> that pass ATS and impress humans.</span>
         </h1>
         <p className="mt-8 text-xl text-slate-600 sm:text-2xl lg:text-2xl">
-          Upload an existing resume, start from one of 10+ templates, or let Gemini craft a first draft from a job
+          Upload an existing resume, start from one of 15+ templates, or let Gemini craft a first draft from a job
           description. Inline ✨ upgrades, ATS scoring, and PDF/DOCX exports included.
         </p>
         <div className="mt-10 flex flex-col gap-4 sm:flex-row">
@@ -37,6 +37,9 @@ export function Hero() {
           </Button>
           <Button asChild variant="subtle" size="lg">
             <Link href="#modes">Explore templates</Link>
+          </Button>
+          <Button asChild variant="outline" size="lg">
+            <Link href="/interview">Try Interview Copilot</Link>
           </Button>
         </div>
         <p className="mt-6 text-sm text-slate-500">

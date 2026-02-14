@@ -53,6 +53,10 @@ const TEMPLATE_VARIANTS = new Set<TemplateVariant>([
   "elevate",
   "minimal",
   "legacy",
+  "vector",
+  "zenith",
+  "slate",
+  "pulse",
 ]);
 
 const isTemplateVariant = (value: unknown): value is TemplateVariant =>

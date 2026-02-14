@@ -19,16 +19,17 @@ import {
 
 const FREE_FEATURES = [
   "Resume upload parsing and editor",
-  "Core templates and basic ATS score",
+  "8 core templates and basic ATS score",
   "TXT and native PDF export",
-  "Daily AI credits for summary improvements",
+  "Daily AI credits for summary improvements and job matching",
 ];
 
 const PRO_FEATURES = [
-  "Premium templates and advanced design packs",
+  "15+ templates including premium executive and high-impact packs",
   "Unlimited AI rewrites + section regenerations",
+  "Role-tailored resume drafts and AI cover letter generation",
   "DOCX export and advanced formatting options",
-  "Priority AI processing and upcoming premium tools",
+  "Priority AI processing, alerts, and upcoming automation tools",
 ];
 
 export default function PricingPage() {
@@ -212,7 +213,7 @@ export default function PricingPage() {
                 disabled={!user || pending || isPro}
                 aria-label="Upgrade to Resumio Pro"
               >
-                {isPro ? "Pro active" : pending ? "Starting checkout..." : "Upgrade securely"}
+                {isPro ? "Pro active" : pending ? "Opening options..." : "Explore Pro plan"}
               </Button>
               {isPro ? (
                 <Button
@@ -243,7 +244,7 @@ export default function PricingPage() {
                 Unlock Pro for {formatPrice(proPrice, currency)} per {interval}. Keep free essentials forever.
               </p>
               <Button onClick={startCheckout} disabled={!user || pending || isPro}>
-                {isPro ? "Pro active" : "Get Pro"}
+                {isPro ? "Pro active" : "Explore Pro"}
               </Button>
             </div>
           </section>
@@ -260,6 +261,14 @@ export default function PricingPage() {
               <ShieldCheck className="h-4 w-4 text-emerald-600" />
               Pro access is validated server-side for AI endpoints to prevent client-side bypass.
             </p>
+          </div>
+          <div className="mt-5 flex gap-6 text-sm">
+            <Link href="/terms" className="font-medium text-slate-500 transition-colors hover:text-slate-900">
+              Terms & Conditions
+            </Link>
+            <Link href="/policy" className="font-medium text-slate-500 transition-colors hover:text-slate-900">
+              Privacy Policy
+            </Link>
           </div>
         </section>
       </div>

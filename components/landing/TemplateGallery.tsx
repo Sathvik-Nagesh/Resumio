@@ -16,6 +16,10 @@ const ACCENT_CLASSES: Record<string, string> = {
   elevate: "from-[#a855f7] to-[#7c3aed]",
   minimal: "from-[#4b5563] to-[#1f2937]",
   legacy: "from-[#0d9488] to-[#115e59]",
+  vector: "from-[#0f766e] to-[#115e59]",
+  zenith: "from-[#4338ca] to-[#1d4ed8]",
+  slate: "from-[#334155] to-[#0f172a]",
+  pulse: "from-[#be123c] to-[#9f1239]",
 };
 
 export function TemplateGallery() {
@@ -24,7 +28,7 @@ export function TemplateGallery() {
       <div className="flex flex-col gap-3 text-left">
         <p className="text-xs font-semibold uppercase tracking-[0.3em] text-slate-500">Template gallery</p>
         <h2 className="text-3xl font-semibold text-slate-900 sm:text-4xl">
-          10+ editorial-grade resume canvases
+          15+ editorial-grade resume canvases
         </h2>
         <p className="text-base text-slate-600 sm:text-lg">
           Pick a template to auto-fill with your data. Switch anytime—content stays synced.

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Crown, X } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -14,9 +15,22 @@ import { trackEvent } from "@/lib/analytics";
 interface UpgradeModalProps {
   open: boolean;
   onClose: () => void;
+  title?: string;
+  description?: string;
+  highlights?: string[];
+  primaryLabel?: string;
+  continueLabel?: string;
 }
 
-export function UpgradeModal({ open, onClose }: UpgradeModalProps) {
+export function UpgradeModal({
+  open,
+  onClose,
+  title,
+  description,
+  highlights,
+  primaryLabel,
+  continueLabel,
+}: UpgradeModalProps) {
   const { isPro, upgradeToPro, openBillingPortal } = useAuthResume();
   const [interval, setInterval] = useState<BillingInterval>("month");
   const [currency, setCurrency] = useState<Currency>("USD");
@@ -27,7 +41,14 @@ export function UpgradeModal({ open, onClose }: UpgradeModalProps) {
     setCurrency(detectPreferredCurrency(navigator.language));
   }, []);
 
-  if (!open) return null;
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open, onClose]);
 
   const handleUpgrade = async () => {
     try {
@@ -51,9 +72,29 @@ export function UpgradeModal({ open, onClose }: UpgradeModalProps) {
   const savings = getProSavingsPercent(currency);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="upgrade-title">
-      <Card className="w-full max-w-xl border-amber-200/60 bg-white">
-        <CardHeader className="gap-4">
+    <AnimatePresence>
+      {open ? (
+        <motion.div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/45 p-4 backdrop-blur-sm"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="upgrade-title"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: 8 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            onClick={(event) => event.stopPropagation()}
+            className="w-full max-w-xl"
+          >
+            <Card className="border-amber-200/60 bg-white">
+              <CardHeader className="gap-4">
           <div className="flex items-start justify-between">
             <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-lg">
               <Crown className="h-5 w-5" />
@@ -62,10 +103,20 @@ export function UpgradeModal({ open, onClose }: UpgradeModalProps) {
               <X className="h-4 w-4" />
             </Button>
           </div>
-          <CardTitle className="text-2xl" id="upgrade-title">Upgrade to Resumio Pro</CardTitle>
+          <CardTitle className="text-2xl" id="upgrade-title">{title || "Explore Resumio Pro"}</CardTitle>
           <CardDescription>
-            Unlock premium templates, advanced exports, and pro-grade AI tools.
+            {description || "Get advanced templates, exports, and AI workflows whenever you're ready."}
           </CardDescription>
+          {highlights && highlights.length > 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-slate-500">What you get in 1 minute</p>
+              <ul className="mt-2 space-y-1 text-sm text-slate-700">
+                {highlights.slice(0, 4).map((item) => (
+                  <li key={item}>• {item}</li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-xs font-semibold uppercase tracking-wider text-slate-500">
               Currency
@@ -114,11 +165,14 @@ export function UpgradeModal({ open, onClose }: UpgradeModalProps) {
                 <li key={item}>• {item}</li>
               ))}
             </ul>
+            <p className="mt-3 text-xs text-slate-500">
+              Keep using free features as long as you like. Pro is here when you want deeper workflow support.
+            </p>
           </div>
           <div className="mt-2 flex flex-wrap gap-3">
             <Button onClick={handleUpgrade} disabled={isPro}>
               <Crown className="mr-2 h-4 w-4" />
-              {isPro ? "Pro active" : "Continue to secure checkout"}
+              {isPro ? "Pro active" : primaryLabel || "See Pro options"}
             </Button>
             {isPro ? (
               <Button
@@ -136,11 +190,14 @@ export function UpgradeModal({ open, onClose }: UpgradeModalProps) {
               </Button>
             ) : null}
             <Button variant="outline" onClick={onClose}>
-              Continue free
+              {continueLabel || "Keep exploring free"}
             </Button>
           </div>
-        </CardHeader>
-      </Card>
-    </div>
+              </CardHeader>
+            </Card>
+          </motion.div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   );
 }

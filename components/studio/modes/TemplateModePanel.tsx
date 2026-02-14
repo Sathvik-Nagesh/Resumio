@@ -136,7 +136,7 @@ export function TemplateModePanel() {
                 selected={template === tpl.id}
                 onSelect={() => {
                   if (isPremiumTemplate(tpl.id) && !isPro) {
-                    toast.info("This template is part of Resumio Pro.");
+                    toast.info("This template is part of Pro. You can explore Pro options from the Studio header.");
                     return;
                   }
                   setTemplate(tpl.id);
@@ -459,6 +459,10 @@ function TemplateCard({ templateId, name, tagline, isPremium, isPro, selected, o
     elevate: { bg: "bg-gradient-to-r from-purple-900 to-purple-700", accent: "border-purple-300" },
     minimal: { bg: "bg-white", accent: "border-slate-900" },
     legacy: { bg: "bg-white", accent: "border-teal-500" },
+    vector: { bg: "bg-gradient-to-br from-teal-800 to-emerald-700", accent: "border-teal-300" },
+    zenith: { bg: "bg-gradient-to-r from-indigo-900 to-blue-700", accent: "border-indigo-300" },
+    slate: { bg: "bg-slate-100", accent: "border-slate-400" },
+    pulse: { bg: "bg-gradient-to-r from-rose-700 to-pink-700", accent: "border-rose-300" },
   };
 
   const colors = templateColors[templateId];

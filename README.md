@@ -66,6 +66,13 @@ npm run dev
 - `FIREBASE_CLIENT_EMAIL`
 - `FIREBASE_PRIVATE_KEY`
 - `ADMIN_EMAILS` (comma-separated, for `/admin/metrics`)
+- `COPILOT_CRON_SECRET` (used to authorize scheduled digest dispatch)
+- `RESEND_API_KEY` (optional, enables digest email delivery)
+- `ALERT_FROM_EMAIL` (optional, sender identity for digest email)
+
+### GitHub Action scheduler secrets
+- `APP_BASE_URL` (e.g. `https://resumio.app`)
+- `COPILOT_CRON_SECRET` (must match runtime env value)
 
 ## Firebase Setup Notes
 
@@ -83,6 +90,19 @@ npm run dev
 npm run lint
 npm run build
 ```
+
+## Scheduled Job Digest (Production)
+
+- Workflow file: `.github/workflows/copilot-digest-cron.yml`
+- Schedule: every 6 hours (`15 */6 * * *`) + manual run support.
+- Endpoint triggered: `POST /api/jobs/alerts/dispatch`
+- Required request header: `x-cron-secret`
+
+Set these GitHub repository secrets:
+1. `APP_BASE_URL`
+2. `COPILOT_CRON_SECRET`
+
+The dispatch route already enforces secret validation before processing digests.
 
 ## Premium Model (Current Implementation)
 

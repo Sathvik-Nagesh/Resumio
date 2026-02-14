@@ -85,7 +85,11 @@ export type TemplateVariant =
   | "metro"
   | "elevate"
   | "minimal"
-  | "legacy";
+  | "legacy"
+  | "vector"
+  | "zenith"
+  | "slate"
+  | "pulse";
 
 export interface ResumeTemplateMeta {
   id: TemplateVariant;
@@ -131,4 +135,93 @@ export interface GeminiResponse<T = unknown> {
     responseTokens: number;
     totalTokens: number;
   };
+}
+
+export interface JobListing {
+  id: string;
+  title: string;
+  company: string;
+  location: string;
+  remote: boolean;
+  applyUrl: string;
+  source: string;
+  publishedAt: string;
+  description: string;
+  tags: string[];
+  salary?: string;
+}
+
+export interface JobMatch {
+  job: JobListing;
+  matchScore: number;
+  reasons: string[];
+  missingSkills: string[];
+}
+
+export interface JobAlertPreferences {
+  enabled: boolean;
+  email: string;
+  frequency: "daily" | "weekly";
+  location?: string;
+  remoteOnly?: boolean;
+}
+
+export type JobApplicationStatus = "saved" | "applied" | "interview" | "rejected";
+
+export interface SavedJobApplication {
+  id: string;
+  uid: string;
+  status: JobApplicationStatus;
+  matchScore: number;
+  reasons: string[];
+  missingSkills: string[];
+  job: JobListing;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InterviewQuestion {
+  id: string;
+  question: string;
+  focus: string;
+  idealAnswer: string;
+}
+
+export interface InterviewAnswerScore {
+  score: number;
+  feedback: string;
+  improvedAnswer: string;
+}
+
+export interface InterviewSession {
+  id: string;
+  uid: string;
+  role: string;
+  company: string;
+  jobDescription: string;
+  questions: InterviewQuestion[];
+  answers: Record<string, string>;
+  scores: Record<string, InterviewAnswerScore>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AutoApplyRule {
+  enabled: boolean;
+  roles: string[];
+  locations: string[];
+  remoteOnly: boolean;
+  minMatchScore: number;
+}
+
+export type AutoApplyQueueStatus = "pending" | "approved" | "rejected";
+
+export interface AutoApplyQueueItem {
+  id: string;
+  uid: string;
+  status: AutoApplyQueueStatus;
+  job: JobListing;
+  matchScore: number;
+  createdAt: string;
+  updatedAt: string;
 }

@@ -11,7 +11,7 @@ const features = [
   },
   {
     icon: FileText,
-    title: "10+ crafted templates",
+    title: "15+ crafted templates",
     description:
       "Live preview galleries inspired by modern editorial and product resumes—each editable down to bullet order.",
   },

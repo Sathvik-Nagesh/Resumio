@@ -4,8 +4,11 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   ArrowRight,
+  ChartLine,
   LayoutTemplate,
+  MessageSquareText,
   Sparkles,
+  Target,
   UploadCloud,
 } from "lucide-react";
 
@@ -27,7 +30,7 @@ const modes = [
     title: "Start from template",
     icon: LayoutTemplate,
     description:
-      "Choose from 10+ glassmorphism canvases and fill a guided wizard. AI suggestions help craft each section.",
+      "Choose from 15+ glassmorphism canvases and fill a guided wizard. AI suggestions help craft each section.",
   },
   {
     title: "Create with AI",
@@ -38,9 +41,33 @@ const modes = [
 ];
 
 const stats = [
-  { label: "Templates", value: "10+", detail: "switch anytime" },
+  { label: "Templates", value: "15+", detail: "switch anytime" },
   { label: "ATS score", value: "85+", detail: "avg. after coaching" },
   { label: "Exports", value: "PDF / DOCX / TXT", detail: "robust + fast" },
+];
+
+const journey = [
+  {
+    title: "Match smarter",
+    description: "Use Job Copilot to find ranked roles aligned with your profile.",
+    icon: Target,
+    href: "/copilot",
+    cta: "Open Job Copilot",
+  },
+  {
+    title: "Apply with context",
+    description: "Generate tailored resumes, cover letters, and outreach messages in one flow.",
+    icon: MessageSquareText,
+    href: "/copilot",
+    cta: "Prepare applications",
+  },
+  {
+    title: "Improve outcomes",
+    description: "Practice with Interview Copilot and monitor conversion in Analytics.",
+    icon: ChartLine,
+    href: "/analytics",
+    cta: "View analytics",
+  },
 ];
 
 export default function Home() {
@@ -92,6 +119,36 @@ export default function Home() {
           <FeatureHighlights />
         </section>
 
+        <section className="mt-20 space-y-8">
+          <SectionHeading
+            eyebrow="All-in-one loop"
+            title="From resume draft to interview prep in one product"
+            description="Resumio keeps your profile, applications, outreach, and prep synced so you can move faster with less tab switching."
+            align="left"
+          />
+          <div className="grid gap-6 md:grid-cols-3">
+            {journey.map((item) => (
+              <Card key={item.title} className="bg-white/85">
+                <CardHeader className="gap-4">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-lg">
+                    <item.icon className="h-5 w-5" />
+                  </div>
+                  <CardTitle>{item.title}</CardTitle>
+                  <CardDescription>{item.description}</CardDescription>
+                </CardHeader>
+                <CardFooter>
+                  <Button variant="ghost" asChild>
+                    <Link href={item.href} className="inline-flex items-center gap-2 text-sm">
+                      {item.cta}
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        </section>
+
         <section className="mt-20 grid gap-8 rounded-[32px] border border-white/40 bg-white/80 p-10 shadow-[0_40px_120px_rgba(15,23,42,0.15)] md:grid-cols-[1.5fr_1fr]">
           <div className="space-y-6">
             <p className="text-sm font-semibold uppercase tracking-[0.35em] text-slate-500">ATS & AI insights</p>
@@ -111,6 +168,9 @@ export default function Home() {
               </Button>
               <Button asChild variant="subtle">
                 <Link href="/pricing">View pricing</Link>
+              </Button>
+              <Button asChild variant="subtle">
+                <Link href="/copilot">Try Job Copilot</Link>
               </Button>
             </div>
             <p className="text-sm text-slate-500">Create a profile to prefill contact details and personalize exports; you can update your display name in Settings.</p>
@@ -162,6 +222,14 @@ export default function Home() {
                 <a href="https://instagram.com/sathvik_nagesh" target="_blank" rel="noopener noreferrer" className="text-sm font-medium text-slate-500 transition-colors hover:text-slate-900">
                   Instagram
                 </a>
+              </div>
+              <div className="flex gap-6">
+                <Link href="/terms" className="text-sm font-medium text-slate-500 transition-colors hover:text-slate-900">
+                  Terms & Conditions
+                </Link>
+                <Link href="/policy" className="text-sm font-medium text-slate-500 transition-colors hover:text-slate-900">
+                  Privacy Policy
+                </Link>
               </div>
             </div>
           </motion.div>

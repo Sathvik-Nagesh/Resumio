@@ -140,6 +140,14 @@ export function ResumePreview({ data, template }: ResumePreviewProps) {
         return <MinimalTemplate data={previewData} />;
       case "legacy":
         return <LegacyTemplate data={previewData} />;
+      case "vector":
+        return <GridTemplate data={previewData} />;
+      case "zenith":
+        return <ElevateTemplate data={previewData} />;
+      case "slate":
+        return <MinimalTemplate data={previewData} />;
+      case "pulse":
+        return <MetroTemplate data={previewData} />;
       default:
         return <AuroraTemplate data={previewData} />;
     }
