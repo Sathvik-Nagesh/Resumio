@@ -4,9 +4,12 @@ import { buildResumeExtractionPrompt } from "@/lib/prompts";
 import { runGeminiFileTextExtraction, runGeminiPromptAsJson } from "@/lib/gemini";
 import { computeAtsScore } from "@/lib/ats";
 import { refineAtsScoreWithAi } from "@/lib/ats-ai";
+import { buildFallbackResumeFromText } from "@/lib/resume-fallback";
 import { normalizeResume } from "@/lib/resume";
 import { ResumeData } from "@/lib/types";
 import { enforceIpRateLimit, rateLimitErrorResponse } from "@/lib/server/rate-limit";
+
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,13 +56,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if API key is set
-    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === "your_gemini_api_key_here") {
-      return NextResponse.json(
-        { error: "Gemini API key not configured. Please add your API key to .env.local" },
-        { status: 500 }
-      );
-    }
+    const hasGeminiKey = Boolean(
+      process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== "your_gemini_api_key_here"
+    );
 
     // Convert file to buffer
     const arrayBuffer = await file.arrayBuffer();
@@ -95,9 +94,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use Gemini to parse the resume
-    const prompt = buildResumeExtractionPrompt(rawText);
-    const parsedResume = await runGeminiPromptAsJson<ResumeData>(prompt);
+    let parsedResume: ResumeData;
+    let parserMode: "gemini" | "fallback" = "fallback";
+    let warning: string | undefined;
+
+    if (hasGeminiKey) {
+      try {
+        const prompt = buildResumeExtractionPrompt(rawText);
+        parsedResume = await runGeminiPromptAsJson<ResumeData>(prompt);
+        parserMode = "gemini";
+      } catch (error) {
+        console.error("Gemini parse failed, using fallback parser:", error);
+        parsedResume = buildFallbackResumeFromText(rawText);
+        warning = "AI parsing is temporarily unavailable. A fallback parser was used.";
+      }
+    } else {
+      parsedResume = buildFallbackResumeFromText(rawText);
+      warning = "AI parsing is not configured in this environment. A fallback parser was used.";
+    }
 
     // Normalize the resume data
     const resume = normalizeResume(parsedResume);
@@ -109,11 +123,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       resume,
       atsScore,
+      parserMode,
+      warning,
     });
   } catch (error) {
     console.error("Error parsing resume:", error);
+    const message =
+      error instanceof Error && error.message
+        ? error.message
+        : "Failed to parse resume. Please verify the file format and try again.";
     return NextResponse.json(
-      { error: "Failed to parse resume. Please verify the file format and try again." },
+      { error: message },
       { status: 500 }
     );
   }

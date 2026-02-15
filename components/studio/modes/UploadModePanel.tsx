@@ -85,6 +85,9 @@ export function UploadModePanel() {
                 setResume(result.resume);
                 setAtsScore(result.atsScore);
                 toast.success("Resume parsed and scored");
+                if (typeof result.warning === "string" && result.warning.trim()) {
+                    toast.info(result.warning);
+                }
         } catch (error) {
             console.error(error);
             const errorMessage = error instanceof Error ? error.message : "There was an issue parsing your resume";
