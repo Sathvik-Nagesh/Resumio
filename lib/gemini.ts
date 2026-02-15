@@ -35,6 +35,48 @@ export async function runGeminiPrompt(prompt: string) {
   return text;
 }
 
+export async function runGeminiFileTextExtraction(params: {
+  buffer: Buffer;
+  mimeType: string;
+  filename?: string;
+}) {
+  const client = getGeminiClient();
+  const model = client.getGenerativeModel({
+    model: MODEL_NAME,
+    generationConfig: {
+      temperature: 0.1,
+      maxOutputTokens: 8192,
+    },
+  });
+
+  const base64 = params.buffer.toString("base64");
+  const prompt =
+    "Extract all readable text from this resume file. Return plain text only, preserving line breaks where possible. No markdown fences, no commentary.";
+
+  const result = await model.generateContent([
+    {
+      text: `${prompt} Filename: ${params.filename || "resume"}`,
+    },
+    {
+      inlineData: {
+        mimeType: params.mimeType,
+        data: base64,
+      },
+    },
+  ]);
+
+  if (!result.response) {
+    throw new Error("Gemini OCR extraction returned no response");
+  }
+
+  const text = result.response.text();
+  if (!text || text.trim().length === 0) {
+    throw new Error("Gemini OCR extraction returned empty text");
+  }
+
+  return text.trim();
+}
+
 export function extractGeminiJson<T = unknown>(text: string): T {
   // Remove common Markdown code-fence wrappers (e.g. ```json\n ... ```)
   // This removes the opening fence with optional language and a following newline,

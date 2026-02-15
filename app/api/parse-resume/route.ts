@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractTextFromBuffer } from "@/lib/parseResume";
 import { buildResumeExtractionPrompt } from "@/lib/prompts";
-import { runGeminiPromptAsJson } from "@/lib/gemini";
+import { runGeminiFileTextExtraction, runGeminiPromptAsJson } from "@/lib/gemini";
 import { computeAtsScore } from "@/lib/ats";
+import { refineAtsScoreWithAi } from "@/lib/ats-ai";
 import { normalizeResume } from "@/lib/resume";
 import { ResumeData } from "@/lib/types";
 import { enforceIpRateLimit, rateLimitErrorResponse } from "@/lib/server/rate-limit";
@@ -64,8 +65,28 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
-    // Extract text from PDF or DOCX
-    const rawText = await extractTextFromBuffer(buffer, file.type, file.name);
+    // Extract text from PDF/DOCX/plain text. If extraction is weak, use Gemini OCR fallback.
+    let rawText = await extractTextFromBuffer(buffer, file.type, file.name);
+    const tooShort = !rawText || rawText.trim().length < 80;
+    const canUseOcrFallback =
+      file.type.includes("pdf") ||
+      file.type.startsWith("image/") ||
+      file.name.toLowerCase().endsWith(".pdf") ||
+      file.name.toLowerCase().endsWith(".png") ||
+      file.name.toLowerCase().endsWith(".jpg") ||
+      file.name.toLowerCase().endsWith(".jpeg");
+
+    if (tooShort && canUseOcrFallback) {
+      try {
+        rawText = await runGeminiFileTextExtraction({
+          buffer,
+          mimeType: file.type || "application/pdf",
+          filename: file.name,
+        });
+      } catch {
+        // Keep raw extraction if OCR fallback fails.
+      }
+    }
 
     if (!rawText || rawText.trim().length < 50) {
       return NextResponse.json(
@@ -82,7 +103,8 @@ export async function POST(request: NextRequest) {
     const resume = normalizeResume(parsedResume);
 
     // Compute ATS score
-    const atsScore = computeAtsScore(resume, jobDescription || undefined);
+    const baseAtsScore = computeAtsScore(resume, jobDescription || undefined);
+    const atsScore = await refineAtsScoreWithAi(baseAtsScore, resume, jobDescription || undefined);
 
     return NextResponse.json({
       resume,

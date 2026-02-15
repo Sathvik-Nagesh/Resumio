@@ -103,10 +103,9 @@ export function UploadModePanel() {
                     </div>
                     <CardTitle>Upload existing resume</CardTitle>
                     <CardDescription>
-                        Accepts PDF or DOCX files. We&apos;ll extract sections, rewrite bullets with Gemini (optional), and calculate
-                        ATS readiness instantly.
+                        Accepts PDF, DOCX, and image resumes. We extract text, run OCR fallback when needed, and score ATS readiness.
                     </CardDescription>
-                    <Input type="file" accept=".pdf,.docx" onChange={handleFileChange} />
+                    <Input type="file" accept=".pdf,.docx,.png,.jpg,.jpeg" onChange={handleFileChange} />
                     <div className="flex flex-wrap gap-3">
                         <Button onClick={handleUpload} disabled={isLoading.upload}>
                             {isLoading.upload ? "Analyzing..." : "Parse & score"}
@@ -163,6 +162,30 @@ export function UploadModePanel() {
                                     <span>Impact</span>
                                     <span>{atsScore.breakdown.impact}</span>
                                 </div>
+                                {typeof atsScore.breakdown.quality === "number" ? (
+                                    <div className="flex items-center justify-between">
+                                        <span>Quality</span>
+                                        <span>{atsScore.breakdown.quality}</span>
+                                    </div>
+                                ) : null}
+                                {typeof atsScore.breakdown.parseConfidence === "number" ? (
+                                    <div className="flex items-center justify-between">
+                                        <span>Parse confidence</span>
+                                        <span>{atsScore.breakdown.parseConfidence}</span>
+                                    </div>
+                                ) : null}
+                                {atsScore.breakdown.roleProfile ? (
+                                    <div className="flex items-center justify-between">
+                                        <span>Role profile</span>
+                                        <span className="capitalize">{atsScore.breakdown.roleProfile}</span>
+                                    </div>
+                                ) : null}
+                                {typeof atsScore.breakdown.aiAdjustment === "number" ? (
+                                    <div className="flex items-center justify-between">
+                                        <span>AI adjustment</span>
+                                        <span>{atsScore.breakdown.aiAdjustment > 0 ? `+${atsScore.breakdown.aiAdjustment}` : atsScore.breakdown.aiAdjustment}</span>
+                                    </div>
+                                ) : null}
                             </div>
                             {atsScore.breakdown.explanation.length ? (
                                 <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-slate-600">
@@ -171,6 +194,52 @@ export function UploadModePanel() {
                                     ))}
                                 </ul>
                             ) : null}
+                            <details className="mt-5 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                                <summary className="cursor-pointer text-sm font-semibold text-slate-800">
+                                    ATS debug view
+                                </summary>
+                                <div className="mt-3 space-y-3 text-sm text-slate-700">
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Matched keywords</p>
+                                        {atsScore.breakdown.keywordMatches.length > 0 ? (
+                                            <p className="mt-1">{atsScore.breakdown.keywordMatches.join(", ")}</p>
+                                        ) : (
+                                            <p className="mt-1 text-slate-500">No strong matches yet.</p>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Missing priority keywords</p>
+                                        {atsScore.breakdown.missingKeywords && atsScore.breakdown.missingKeywords.length > 0 ? (
+                                            <p className="mt-1">{atsScore.breakdown.missingKeywords.join(", ")}</p>
+                                        ) : (
+                                            <p className="mt-1 text-slate-500">No major gaps detected.</p>
+                                        )}
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Section penalties</p>
+                                        {atsScore.breakdown.sectionPenalties && atsScore.breakdown.sectionPenalties.length > 0 ? (
+                                            <ul className="mt-1 list-disc space-y-1 pl-5">
+                                                {atsScore.breakdown.sectionPenalties.map((penalty) => (
+                                                    <li key={penalty}>{penalty}</li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p className="mt-1 text-slate-500">No major penalties detected.</p>
+                                        )}
+                                    </div>
+                                    {atsScore.breakdown.weights ? (
+                                        <div>
+                                            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">Scoring weights</p>
+                                            <p className="mt-1">
+                                                Structure {Math.round(atsScore.breakdown.weights.structure * 100)}%,
+                                                Keywords {Math.round(atsScore.breakdown.weights.keywords * 100)}%,
+                                                Impact {Math.round(atsScore.breakdown.weights.impact * 100)}%,
+                                                Quality {Math.round(atsScore.breakdown.weights.quality * 100)}%
+                                            </p>
+                                        </div>
+                                    ) : null}
+                                </div>
+                            </details>
                         </div>
                     ) : (
                         <p className="text-sm text-slate-500">

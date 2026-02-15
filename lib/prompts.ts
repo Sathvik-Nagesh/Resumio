@@ -370,6 +370,45 @@ Rules:
 - No markdown fences, no extra keys.`;
 }
 
+export function buildAtsAiReviewPrompt(params: {
+  resumeSummary: string;
+  resumeTitle: string;
+  skills: string[];
+  jobDescription: string;
+  baseScore: number;
+  breakdown: {
+    structure: number;
+    keywords: number;
+    impact: number;
+    quality?: number;
+  };
+}) {
+  return `You are an ATS scoring auditor.
+Given a deterministic ATS score and a candidate/job snapshot, return a conservative adjustment.
+
+Return JSON only:
+{
+  "adjustment": number,
+  "confidence": number,
+  "reasons": string[]
+}
+
+Rules:
+- adjustment must be an integer between -8 and +8.
+- confidence must be an integer between 0 and 100.
+- Be conservative; do not over-adjust.
+- Positive adjustments require clear, job-relevant alignment evidence.
+- Negative adjustments should reflect clear mismatch, vague impact, or missing role keywords.
+- Never return markdown.
+
+Base score: ${params.baseScore}
+Breakdown: ${JSON.stringify(params.breakdown)}
+Resume title: ${JSON.stringify(params.resumeTitle)}
+Resume summary: ${JSON.stringify(params.resumeSummary)}
+Skills: ${JSON.stringify(params.skills.slice(0, 40))}
+Job description: ${JSON.stringify(params.jobDescription.slice(0, 7000))}`;
+}
+
 export function buildNetworkingMessagePrompt(params: {
   mode: "recruiter" | "referral" | "followup";
   role: string;

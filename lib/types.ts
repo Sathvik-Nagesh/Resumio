@@ -104,8 +104,20 @@ export interface AtsScoreBreakdown {
   structure: number;
   keywords: number;
   impact: number;
+  quality?: number;
+  parseConfidence?: number;
+  roleProfile?: string;
+  aiAdjustment?: number;
   explanation: string[];
   keywordMatches: string[];
+  missingKeywords?: string[];
+  sectionPenalties?: string[];
+  weights?: {
+    structure: number;
+    keywords: number;
+    impact: number;
+    quality: number;
+  };
 }
 
 export interface AtsScoreResponse {
